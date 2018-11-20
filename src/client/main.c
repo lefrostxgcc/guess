@@ -5,17 +5,15 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <guess_common.h>
 
 static int create_client_socket(const char *address, int port);
-static void	interact_with_server(int client_socket);
+static void	interact_with_server();
+static int check_server_responce(int socket, int number, int *min, int *max);
 
 int main(int argc, char *argv[]) 
 {
-	int			client_socket;
-
-	client_socket = create_client_socket("127.0.0.1", 8000);
-	interact_with_server(client_socket);
-	close(client_socket);
+	interact_with_server();
 
 	return 0; 
 }
@@ -39,6 +37,7 @@ static int create_client_socket(const char *address, int port)
 		perror("inet_pton");
 		exit(EXIT_FAILURE);
 	}
+
 	if (connect(client_socket, (struct sockaddr *) &server_address,
 		sizeof(server_address)) < 0)
 	{
@@ -49,23 +48,53 @@ static int create_client_socket(const char *address, int port)
 	return client_socket;
 }
 
-static void	interact_with_server(int client_socket)
+static void	interact_with_server()
 {
-	char		inbuf[256];
-	const char	outbuf[] = "Get me some information";
-	int			bytes_read;
+	int			client_socket;
+	int			client_number;
+	int			server_responce;
+	int			min;
+	int			max;
+	int			step;
 
-	if (write(client_socket, outbuf, sizeof(outbuf)/sizeof(outbuf[0]) - 1) < 0)
+	step = 1;
+	min = MIN_NUMBER;
+	max = MAX_NUMBER;
+	client_number = rand_number(MIN_NUMBER, MAX_NUMBER);
+	printf("Guess number in [%d, %d]\n", MIN_NUMBER, MAX_NUMBER);
+	while (1)
 	{
-		perror("write");
-		exit(EXIT_FAILURE);
+		client_socket = create_client_socket("127.0.0.1", 8000);
+		printf("Step %d. Maybe number is %d...\n", step, client_number);
+		send_number(client_socket, client_number);
+		server_responce = check_server_responce(
+			client_socket, client_number, &min, &max);
+		if (server_responce == NUMBER_EQUAL)
+			break;
+		client_number = (min + max) / 2;
+		close(client_socket);
+		sleep(2);
+		step++;
 	}
-	bytes_read = read(client_socket, inbuf, sizeof(inbuf) / sizeof(inbuf[0]));
-	if (bytes_read < 0)
+	printf("Guess number: %d\n", client_number);
+}
+
+static int check_server_responce(int socket, int number, int *min, int *max)
+{
+	int		server_responce;
+
+	server_responce = recv_number(socket);
+	switch (server_responce)
 	{
-		perror("read");
-		exit(EXIT_FAILURE);
+		case NUMBER_LESS:
+			*max = number;
+			break;
+		case NUMBER_GREATER:
+			*min = number;
+			break;
+		case NUMBER_ERROR:
+			fprintf(stderr, "Invalid server responce\n");
+			exit(EXIT_FAILURE);
 	}
-	inbuf[bytes_read] = '\0';
-	printf("%s\n", inbuf);
+	return server_responce;
 }

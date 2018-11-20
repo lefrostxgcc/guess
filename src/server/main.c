@@ -5,9 +5,11 @@
 #include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <guess_common.h>
 
 static int create_server_socket(int port, int backlog);
 static void accept_clients(int server_socket);
+static int check_client_number(int socket, int guessed_number);
 
 int main(int argc, char *argv[]) 
 {
@@ -58,13 +60,14 @@ static int create_server_socket(int port, int backlog)
 
 static void accept_clients(int server_socket)
 {
-	char	buf[256];
-	int		client_socket;
-	int		count;
-	int		bytes_read;
-	int		out_msg_len;
+	int			client_socket;
+	int			guessed_number;
+	int			client_number;
+	int			result;
 
-	count = 0;
+	guessed_number = rand_number(MIN_NUMBER, MAX_NUMBER);
+	printf("Guess number in [%d, %d] is %d\n", MIN_NUMBER, MAX_NUMBER,
+		guessed_number);
 	while (1)
 	{
 		client_socket = accept(server_socket, 0, 0);
@@ -73,18 +76,25 @@ static void accept_clients(int server_socket)
 			perror("accept");
 			exit(EXIT_FAILURE);
 		}
-		count++;
-		printf("Client accepted %d\n", count);
-		bytes_read = read(client_socket, buf, sizeof(buf) / sizeof(buf[0]));
-		if (bytes_read < 0)
-		{
-			perror("read");
-			exit(EXIT_FAILURE);
-		}
-		sleep(3);
-		out_msg_len = snprintf(buf, sizeof(buf)/sizeof(buf[0]),
-			"#%d your message length is %d\n", count, bytes_read);
-		write(client_socket, buf, out_msg_len);
+		result = check_client_number(client_socket, guessed_number);
+		if (result == NUMBER_EQUAL)
+			printf("Client guess number!\n");
+		send_number(client_socket, result);
 		close(client_socket);
 	}
+}
+
+static int check_client_number(int socket, int guessed_number)
+{
+	int			client_number;
+
+	client_number = recv_number(socket);
+	if (client_number == 0)
+		return NUMBER_ERROR;
+	else if (client_number < guessed_number)
+		return NUMBER_GREATER;
+	else if (client_number > guessed_number)
+		return NUMBER_LESS;
+	else
+		return NUMBER_EQUAL;
 }
