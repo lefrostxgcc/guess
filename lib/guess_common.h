@@ -4,8 +4,9 @@
 enum {MIN_NUMBER = 1, MAX_NUMBER = 100};
 enum {NUMBER_ERROR, NUMBER_EQUAL, NUMBER_LESS, NUMBER_GREATER};
 
-int		rand_number(int min, int max);
-void	send_number(int socket, int number);
-int		recv_number(int socket);
+int			rand_number(int min, int max);
+void		send_number(int socket, int number);
+int			recv_number(int socket);
+const char	*status_str(int num);
 
 #endif

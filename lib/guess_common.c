@@ -37,3 +37,16 @@ int	recv_number(int socket)
 	buf[bytes_read] = '\0';
 	return atoi(buf);
 }
+
+const char	*status_str(int num)
+{
+	static const char *msg[] = 
+	{
+		"error",
+		"equal",
+		"less",
+		"greater"
+	};
+
+	return msg[num >= 0 && num < sizeof(msg)/sizeof(msg[0]) ? num : 0];
+}

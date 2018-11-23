@@ -65,10 +65,11 @@ static void	interact_with_server()
 	while (1)
 	{
 		client_socket = create_client_socket("127.0.0.1", 8000);
-		printf("Step %d. Maybe number is %d...\n", step, client_number);
+		printf("Step %d. Maybe number is %d...\t", step, client_number);
 		send_number(client_socket, client_number);
 		server_responce = check_server_responce(
 			client_socket, client_number, &min, &max);
+		printf("%s\n", status_str(server_responce));
 		if (server_responce == NUMBER_EQUAL)
 			break;
 		client_number = (min + max) / 2;
